@@ -1,0 +1,27 @@
+services:
+  client:
+    build:
+      context: ./client
+      args:
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL}
+        SERVER_PORT: ${SERVER_PORT}
+    depends_on:
+      - server
+    networks:
+      - app-network
+    ports:
+      - "${CLIENT_PORT}:80"
+
+  server:
+    networks:
+      - app-network
+    build:
+      context: ./server
+    expose:
+      - "${SERVER_PORT}"
+    environment:
+      - SERVER_PORT=${SERVER_PORT}
+
+networks:
+  app-network:
+    driver: bridge
