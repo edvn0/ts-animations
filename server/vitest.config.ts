@@ -1,9 +1,10 @@
 import { defineConfig } from 'vitest/config'
+import tsconfigPaths from 'vite-tsconfig-paths'
 
-// Add path resolution for the server from tsconfig.json
 
 export default defineConfig({
+  plugins: [tsconfigPaths()],
   test: {
-    runner: 'node',
+    environment: 'node',
   },
 })

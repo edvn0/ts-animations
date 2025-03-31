@@ -7,9 +7,10 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
+COPY package.json ./
+RUN pnpm install
 
 COPY . .
-RUN pnpm install
 RUN pnpm build
 
 FROM nginx:1.27-perl AS production
