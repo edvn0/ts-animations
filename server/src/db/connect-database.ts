@@ -1,9 +1,10 @@
-import { connect } from 'ts-postgres';
-import type { Client } from 'ts-postgres';
-import { createPool } from 'generic-pool';
-import { createUserTable } from './models/user.model';
-import { query } from './queries';
-import { createUserRolesTables } from './models/user.roles.model';
+import { connect } from 'ts-postgres'
+import type { Client } from 'ts-postgres'
+import { createPool } from 'generic-pool'
+import { createUserTable } from './models/user.model'
+import { query } from './queries'
+import { createUserRolesTables } from './models/user.roles.model'
+import { logError, logInfo } from '../logger'
 
 export const pool = createPool(
 	{
@@ -14,48 +15,49 @@ export const pool = createPool(
 				user: process.env['POSTGRES_USER'] ?? 'postgres',
 				password: process.env['POSTGRES_PASSWORD'] ?? 'postgres',
 				database: process.env['POSTGRES_DB'] ?? 'postgres',
+			})
+			client.on('error', (e) => {
+				logError('Database error:', e)
 			});
-			client.on('error', console.log);
-			return client;
+			return client
 		},
 		destroy: (client: Client) => client.end(),
 		validate: async (client: Client) => {
 			try {
-				await client.query({ text: 'SELECT 1' });
-				return true;
+				await client.query({ text: 'SELECT 1' })
+				return true
 			} catch {
-				return false;
+				return false
 			}
 		},
 	},
-	{ testOnBorrow: true },
-);
-
+	{ testOnBorrow: true }
+)
 
 async function setup(setupFunctions: Array<() => Promise<void>>) {
-	console.log('Setting up database...');
+	logInfo('Setting up database...')
 	for (const setupFunction of setupFunctions) {
-		await setupFunction();
+		await setupFunction()
 	}
-	console.log('Database setup complete.');
+	logInfo('Database setup complete.')
 }
 export async function connectDatabase(tryCount: number = 10): Promise<void> {
 	for (let i = 0; i < tryCount; i++) {
 		try {
 			await query({ text: 'SELECT 1' })
 
-			await setup([createUserTable, createUserRolesTables,]);
+			await setup([createUserTable, createUserRolesTables])
 
-			return;
+			return
 		} catch (error) {
-			console.error(`Database connection attempt ${i + 1} failed:`, error)
+			logError(`Database connection attempt ${i + 1} failed:`, error)
 			if (i === tryCount - 1) throw error
-			await new Promise(resolve => setTimeout(resolve, 1000))
+			await new Promise((resolve) => setTimeout(resolve, 1000))
 		}
 	}
 }
 
 export async function destroy() {
-	await pool.drain();
-	await pool.clear();
+	await pool.drain()
+	await pool.clear()
 }

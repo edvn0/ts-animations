@@ -2,15 +2,12 @@ services:
   client:
     build:
       context: ./client
-      args:
-        VITE_BACKEND_URL: ${VITE_BACKEND_URL}
-        SERVER_PORT: ${SERVER_PORT}
     depends_on:
       - server
     networks:
       - app-network
     ports:
-      - "${CLIENT_PORT}:80"
+      - '3000:80'
 
   server:
     networks:
@@ -18,14 +15,14 @@ services:
     build:
       context: ./server
     expose:
-      - "${SERVER_PORT}"
+      - '4000'
     environment:
-      SERVER_PORT: ${SERVER_PORT}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       STATIC_JWT: ${STATIC_JWT}
       POSTGRES_HOST: postgres
+      NODE_ENV: ${NODE_ENV}
 
   postgres:
     image: postgres:latest
@@ -39,7 +36,7 @@ services:
     networks:
       - app-network
     ports:
-      - "5432"
+      - '5432'
 
   pgadmin:
     image: dpage/pgadmin4
@@ -48,7 +45,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
     ports:
-      - "8080:80"
+      - '8080:80'
     depends_on:
       - postgres
     networks:

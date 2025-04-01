@@ -1,20 +1,24 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import userService from '../services/user.service';
+import userService from '../services/user.service'
+import { useGlobalToast } from '../composables/use.toast'
 
 defineProps<{ msg: string }>()
+
+const { success, error } = useGlobalToast()
 
 const count = ref(0)
 
 onMounted(async () => {
   try {
-    const logined = await userService.login("edwin98dahlberg@gmail.com", "password");
-    console.log('Login response:', logined)
-
-    const userFromUserService = await userService.getUsers();
+    await userService.login('mytestuser@gmail.com', 'password')
+    const userFromUserService = await userService.getUsers()
     console.log('User from userService:', userFromUserService)
-  } catch (error) {
-    console.error('Error fetching users:', error)
+
+    success('Successfully logged in');
+  } catch (err) {
+    error('Login failed')
+    console.error('Login error:', err)
   }
 })
 </script>
@@ -32,15 +36,12 @@ onMounted(async () => {
 
   <p>
     Check out
-    <a href="https://vuejs.org/guide/quick-start.html#local" target="_blank"
-      >create-vue</a
-    >, the official Vue + Vite starter
+    <a href="https://vuejs.org/guide/quick-start.html#local" target="_blank">create-vue</a>, the
+    official Vue + Vite starter
   </p>
   <p>
     Learn more about IDE Support for Vue in the
-    <a
-      href="https://vuejs.org/guide/scaling-up/tooling.html#ide-support"
-      target="_blank"
+    <a href="https://vuejs.org/guide/scaling-up/tooling.html#ide-support" target="_blank"
       >Vue Docs Scaling up Guide</a
     >.
   </p>

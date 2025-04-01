@@ -1,6 +1,7 @@
-import { faker } from '@faker-js/faker';
-import { query } from '../queries';
-import passwordService from '../../services/password.service';
+import { faker } from '@faker-js/faker'
+import { query } from '../queries'
+import passwordService from '../../services/password.service'
+import { logInfo } from '../../logger'
 
 export interface User {
 	id: number
@@ -18,7 +19,7 @@ export const userSelect = `
 	password,
 	created_at AS "createdAt",
 	updated_at AS "updatedAt"
-`;
+`
 
 export async function createUserTable(): Promise<void> {
 	const q = `
@@ -31,54 +32,60 @@ export async function createUserTable(): Promise<void> {
 			-- Use CURRENT_TIMESTAMP to set the default value for updated_at
 			updated_at TIMESTAMPTZ  DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL
 		);
-	`;
-	await query<void>({ text: q });
+	`
+	await query<void>({ text: q })
 
 	const indexQ = `
 		CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON users (email);
-	`;
-	await query<void>({ text: indexQ });
+	`
+	await query<void>({ text: indexQ })
 
 	const countQ = `
 		SELECT COUNT(*) FROM users;
-	`;
-	const { rows } = await query<{ count: number }>({ text: countQ });
-	const count = rows[0]?.reify()?.count ?? 0;
+	`
+	const { rows } = await query<{ count: number }>({ text: countQ })
+	const count = rows[0]?.reify()?.count ?? 0
 	if (count > 100) {
-		console.log(`Users count is ${count}, no need to insert more.`);
-		return;
+		logInfo(`Users count is ${count}, no need to insert more.`)
+		return
 	}
 
 	const insertQ = `
 		INSERT INTO users (name, email, password)
 		SELECT $1, $2, $3
 		ON CONFLICT (email) DO NOTHING;
-	`;
+	`
 	const users = Array.from({ length: 10000 }, async () => {
-		const firstName = faker.person.firstName();
-		const lastName = faker.person.lastName();
-		const name = `${firstName} ${lastName}`;
-		const email = faker.internet.email({ firstName, lastName });
-		const password = await passwordService.hashPassword(faker.internet.password());
-		return query<{ id: number }>({
-			text: insertQ,
-		}, [name, email, password]);
-	});
+		const firstName = faker.person.firstName()
+		const lastName = faker.person.lastName()
+		const name = `${firstName} ${lastName}`
+		const email = faker.internet.email({ firstName, lastName })
+		const password = await passwordService.hashPassword(faker.internet.password())
+		return query<{ id: number }>(
+			{
+				text: insertQ,
+			},
+			[name, email, password]
+		)
+	})
 
-	await Promise.all(users);
+	await Promise.all(users)
 
 	// Insert my user!
 	const myUserQ = `
 		INSERT INTO users (name, email, password)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (email) DO NOTHING;
-	`;
+	`
 	const myUser = {
-		name: 'Edwin Dahlberg',
-		email: 'edwin98dahlberg@gmail.com',
+		name: 'Test Testsson',
+		email: 'mytestuser@gmail.com',
 		password: 'password',
-	};
-	await query<{ id: number }>({
-		text: myUserQ,
-	}, [myUser.name, myUser.email, await passwordService.hashPassword(myUser.password)]);
+	}
+	await query<{ id: number }>(
+		{
+			text: myUserQ,
+		},
+		[myUser.name, myUser.email, await passwordService.hashPassword(myUser.password)]
+	)
 }

@@ -1,7 +1,7 @@
-import { userSelect } from "../db/models/user.model";
-import { query } from "../db/queries";
-import passwordService from "./password.service";
-import {sign} from "jsonwebtoken";
+import { userSelect } from '../db/models/user.model'
+import { query } from '../db/queries'
+import passwordService from './password.service'
+import { sign } from 'jsonwebtoken'
 
 export type User = {
 	id: number
@@ -10,23 +10,23 @@ export type User = {
 	password: string
 	createdAt: Date
 	updatedAt: Date
-};
+}
 
 export type UpdateUserParameters = {
 	name?: string
 	email?: string
 	password?: string
-};
+}
 
-type EmailPasswordName = 'email' | 'password' | 'name';
+type EmailPasswordName = 'email' | 'password' | 'name'
 
 export class UserService {
 	public async getAllUsers(): Promise<User[]> {
-		const users = await query<User>({ text: `SELECT ${userSelect} FROM users` });
+		const users = await query<User>({ text: `SELECT ${userSelect} FROM users` })
 		if (users.rows.length === 0) {
-			return [];
+			return []
 		}
-		return users.rows.map((user) => user.reify());
+		return users.rows.map((user) => user.reify())
 	}
 
 	public async createUser(name: string, email: string, userPassword: string): Promise<User | null> {
@@ -34,41 +34,46 @@ export class UserService {
 			INSERT INTO users (name, email, password, created_at, updated_at)
 			VALUES ($1, $2, $3, CURRENT_TIMESTAMP AT TIME ZONE 'UTC', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 			RETURNING ${userSelect};
-		`;
-		const password = await passwordService.hashPassword(userPassword);
-		const result = await query<User>({ text: q }, [name, email, password]);
+		`
+		const password = await passwordService.hashPassword(userPassword)
+		const result = await query<User>({ text: q }, [name, email, password])
 		if (result.rows.length === 0) {
-			throw new Error("User creation failed");
+			throw new Error('User creation failed')
 		}
-		return result.rows[0]?.reify() ?? null;
+		return result.rows[0]?.reify() ?? null
 	}
 
-	public async updateUser(id: number, updatableParameters: UpdateUserParameters): Promise<User | null> {
-		const { name, email, password } = updatableParameters;
+	public async updateUser(
+		id: number,
+		updatableParameters: UpdateUserParameters
+	): Promise<User | null> {
+		const { name, email, password } = updatableParameters
 		const fieldsToUpdate: Record<EmailPasswordName, string> = {
-			'email': email ?? '',
-			'password': password ?? '',
-			'name': name ?? '',
-		};
-		if (Object.keys(fieldsToUpdate).every((key) => fieldsToUpdate[key as EmailPasswordName] === '')) {
-			throw new Error("No fields to update");
+			email: email ?? '',
+			password: password ?? '',
+			name: name ?? '',
+		}
+		if (
+			Object.keys(fieldsToUpdate).every((key) => fieldsToUpdate[key as EmailPasswordName] === '')
+		) {
+			throw new Error('No fields to update')
 		}
 		const setClause = Object.keys(fieldsToUpdate)
 			.filter((key) => fieldsToUpdate[key as EmailPasswordName] !== '')
 			.map((key, index) => `${key} = $${index + 1}`)
-			.join(", ");
-		const values = Object.values(fieldsToUpdate).filter((value) => value !== '');
+			.join(', ')
+		const values = Object.values(fieldsToUpdate).filter((value) => value !== '')
 		const q = `
 			UPDATE users
 			SET ${setClause}, updated_at = CURRENT_TIMESTAMP
 			WHERE id = $${values.length + 1}
 			RETURNING ${userSelect};
-		`;
-		const result = await query<User>({ text: q }, [...values, id]);
+		`
+		const result = await query<User>({ text: q }, [...values, id])
 		if (result.rows.length === 0) {
-			return null;
+			return null
 		}
-		return result.rows[0]?.reify() ?? null;
+		return result.rows[0]?.reify() ?? null
 	}
 
 	public async getUserById(id: number): Promise<User | null> {
@@ -76,20 +81,20 @@ export class UserService {
 			SELECT ${userSelect}
 			FROM users
 			WHERE id = $1;
-		`;
-		const result = await query<User>({ text: q }, [id]);
+		`
+		const result = await query<User>({ text: q }, [id])
 		if (result.rows.length === 0) {
-			return null;
+			return null
 		}
-		return result.rows[0]?.reify() ?? null;
+		return result.rows[0]?.reify() ?? null
 	}
 
 	public async deleteUser(id: number): Promise<void> {
 		const q = `
 			DELETE FROM users
 			WHERE id = $1;
-		`;
-		await query<void>({ text: q }, [id]);
+		`
+		await query<void>({ text: q }, [id])
 	}
 
 	public async getUserByEmail(email: string): Promise<User | null> {
@@ -97,34 +102,37 @@ export class UserService {
 			SELECT ${userSelect}
 			FROM users
 			WHERE email = $1;
-		`;
-		const result = await query<User>({ text: q }, [email]);
+		`
+		const result = await query<User>({ text: q }, [email])
 		if (result.rows.length === 0) {
-			return null;
+			return null
 		}
-		return result.rows[0]?.reify() ?? null;
+		return result.rows[0]?.reify() ?? null
 	}
 
 	public async login(email: string, password: string): Promise<string | null> {
-		const user = await this.getUserByEmail(email);
+		const user = await this.getUserByEmail(email)
 		if (!user) {
-			return null;
+			return null
 		}
-		const isPasswordValid = await passwordService.comparePassword(password, user.password);
+		const isPasswordValid = await passwordService.comparePassword(password, user.password)
 		if (!isPasswordValid) {
-			return null;
+			return null
 		}
 
-		const JWT_SECRET = process.env['STATIC_JWT'] ?? 'dev-secret';
+		const JWT_SECRET = process.env['STATIC_JWT'] ?? 'dev-secret'
 
-		const roles = await query<{ name: string }>({
-			text: `
+		const roles = await query<{ name: string }>(
+			{
+				text: `
 				SELECT r.name
 				FROM user_roles ur
 				JOIN roles r ON ur.role_id = r.id
 				WHERE ur.user_id = $1
 			`,
-		}, [user.id]);
+			},
+			[user.id]
+		)
 
 		const token = sign(
 			{
@@ -135,16 +143,15 @@ export class UserService {
 			},
 			JWT_SECRET,
 			{
-
-				expiresIn: '1h',
+				expiresIn: '1m',
 				algorithm: 'HS256',
 				issuer: 'ts-animations-server',
 				audience: 'ts-animations-client',
-			},
-		);
+			}
+		)
 
-		return token;
+		return token
 	}
 }
 
-export default new UserService();
+export default new UserService()

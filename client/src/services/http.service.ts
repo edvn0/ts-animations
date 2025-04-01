@@ -1,7 +1,7 @@
 import axios, { AxiosError, type AxiosInstance, type AxiosResponse } from 'axios'
 import tokenService from './token.service'
 
-const BASE_URL = import.meta.env.PROD ? import.meta.env.VITE_BACKEND_URL : ''
+const BASE_URL = ''
 
 class HttpError extends Error {
 	public readonly isHttpError = true
@@ -9,7 +9,12 @@ class HttpError extends Error {
 	public readonly responseData?: unknown
 	public readonly originalError: unknown
 
-	constructor(message: string, statusCode?: number, responseData?: unknown, originalError?: unknown) {
+	constructor(
+		message: string,
+		statusCode?: number,
+		responseData?: unknown,
+		originalError?: unknown
+	) {
 		super(message)
 		this.name = 'HttpError'
 		this.statusCode = statusCode
@@ -29,12 +34,12 @@ class HttpService {
 		})
 
 		this.axiosInstance.interceptors.request.use((config) => {
-			const token = tokenService.get();
-			if (!token) return config;
+			const token = tokenService.get()
+			if (!token) return config
 
-			config.headers['Authorization'] = `Bearer ${token}`;
-			return config;
-		});
+			config.headers['Authorization'] = `Bearer ${token}`
+			return config
+		})
 	}
 
 	public async get<T>(url: string, params?: Record<string, any>): Promise<T> {
@@ -88,4 +93,4 @@ class HttpService {
 export type { HttpService }
 
 const httpService: HttpService = new HttpService(BASE_URL)
-export default httpService;
+export default httpService
