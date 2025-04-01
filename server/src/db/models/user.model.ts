@@ -1,5 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { query } from '../queries';
+import passwordService from '../../services/password.service';
 
 export interface User {
 	id: number
@@ -42,7 +43,7 @@ export async function createUserTable(): Promise<void> {
 		SELECT COUNT(*) FROM users;
 	`;
 	const { rows } = await query<{ count: number }>({ text: countQ });
-	const count = rows[0].reify().count;
+	const count = rows[0]?.reify()?.count ?? 0;
 	if (count > 100) {
 		console.log(`Users count is ${count}, no need to insert more.`);
 		return;
@@ -53,13 +54,31 @@ export async function createUserTable(): Promise<void> {
 		SELECT $1, $2, $3
 		ON CONFLICT (email) DO NOTHING;
 	`;
-	const users = Array.from({ length: 10000 }, () => ({
-		name: faker.person.fullName(),
-		email: faker.internet.email(),
-		password: faker.internet.password(),
-	})).map((user) => query<{ id: number }>({
-		text: insertQ,
-	}, [user.name, user.email, user.password]));
+	const users = Array.from({ length: 10000 }, async () => {
+		const firstName = faker.person.firstName();
+		const lastName = faker.person.lastName();
+		const name = `${firstName} ${lastName}`;
+		const email = faker.internet.email({ firstName, lastName });
+		const password = await passwordService.hashPassword(faker.internet.password());
+		return query<{ id: number }>({
+			text: insertQ,
+		}, [name, email, password]);
+	});
 
 	await Promise.all(users);
+
+	// Insert my user!
+	const myUserQ = `
+		INSERT INTO users (name, email, password)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (email) DO NOTHING;
+	`;
+	const myUser = {
+		name: 'Edwin Dahlberg',
+		email: 'edwin98dahlberg@gmail.com',
+		password: 'password',
+	};
+	await query<{ id: number }>({
+		text: myUserQ,
+	}, [myUser.name, myUser.email, await passwordService.hashPassword(myUser.password)]);
 }

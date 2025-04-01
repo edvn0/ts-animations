@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import httpService from '../services/http.service'
 import userService from '../services/user.service';
 
 defineProps<{ msg: string }>()
@@ -9,10 +8,11 @@ const count = ref(0)
 
 onMounted(async () => {
   try {
-    const users = await httpService.get<any[]>('/v1/users')
-    const users1 = await httpService.get<any>('/v2/users/1')
+    const logined = await userService.login("edwin98dahlberg@gmail.com", "password");
+    console.log('Login response:', logined)
+
     const userFromUserService = await userService.getUsers();
-    console.log('Users:', users, users1, userFromUserService)
+    console.log('User from userService:', userFromUserService)
   } catch (error) {
     console.error('Error fetching users:', error)
   }

@@ -55,7 +55,7 @@ userRouterV2.put('/:id',
 			res.status(400).json({ errors: result.array() });
 			return;
 		}
-		const userId = parseInt(req.params?.id, 10)
+		const userId = parseInt(req.params['id'], 10)
 		if (isNaN(userId)) {
 			res.status(400).json({ message: 'Invalid user ID' })
 			return;

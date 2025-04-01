@@ -3,16 +3,17 @@ import type { Client } from 'ts-postgres';
 import { createPool } from 'generic-pool';
 import { createUserTable } from './models/user.model';
 import { query } from './queries';
+import { createUserRolesTables } from './models/user.roles.model';
 
 export const pool = createPool(
 	{
 		create: async () => {
 			const client = await connect({
-				host: process.env.POSTGRES_HOST,
-				port: Number(process.env.POSTGRES_PORT) || 5432,
-				user: process.env.POSTGRES_USER,
-				password: process.env.POSTGRES_PASSWORD,
-				database: process.env.POSTGRES_DB,
+				host: process.env['POSTGRES_HOST'] ?? 'localhost',
+				port: Number(process.env['POSTGRES_PORT']) || 5432,
+				user: process.env['POSTGRES_USER'] ?? 'postgres',
+				password: process.env['POSTGRES_PASSWORD'] ?? 'postgres',
+				database: process.env['POSTGRES_DB'] ?? 'postgres',
 			});
 			client.on('error', console.log);
 			return client;
@@ -43,7 +44,7 @@ export async function connectDatabase(tryCount: number = 10): Promise<void> {
 		try {
 			await query({ text: 'SELECT 1' })
 
-			await setup([createUserTable]);
+			await setup([createUserTable, createUserRolesTables,]);
 
 			return;
 		} catch (error) {

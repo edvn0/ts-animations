@@ -12,6 +12,15 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    env:
+      VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
+      SERVER_PORT: ${{ secrets.SERVER_PORT }}
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+      STATIC_JWT: ${{ secrets.STATIC_JWT }}
+      PGADMIN_EMAIL: ${{ secrets.PGADMIN_EMAIL }}
+      PGADMIN_PASSWORD: ${{ secrets.PGADMIN_PASSWORD }}
 
     steps:
       - name: Checkout code
@@ -26,35 +35,51 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Cache Docker layers
+      - name: Write .env file
+        run: |
+          cat <<EOF > .env
+          VITE_BACKEND_URL=${VITE_BACKEND_URL}
+          SERVER_PORT=${SERVER_PORT}
+          POSTGRES_USER=${POSTGRES_USER}
+          POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+          POSTGRES_DB=${POSTGRES_DB}
+          STATIC_JWT=${STATIC_JWT}
+          PGADMIN_EMAIL=${PGADMIN_EMAIL}
+          PGADMIN_PASSWORD=${PGADMIN_PASSWORD}
+          EOF
+
+      - name: Restore Docker cache
         uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          key: buildx-${{ runner.os }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-buildx-
+            buildx-${{ runner.os }}-
 
       - name: Build and push client image
         uses: docker/build-push-action@v5
         with:
           context: ./client
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/ts-animations-client:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}-client:latest
+          build-args: |
+            VITE_BACKEND_URL=${{ env.VITE_BACKEND_URL }}
+            SERVER_PORT=${{ env.SERVER_PORT }}
           cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new-client
+          cache-to: type=local,dest=/tmp/.buildx-cache-client,mode=max
 
       - name: Build and push server image
         uses: docker/build-push-action@v5
         with:
           context: ./server
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/ts-animations-server:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}-server:latest
           cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new-server
+          cache-to: type=local,dest=/tmp/.buildx-cache-server,mode=max
 
-      - name: Move new cache into place
+      - name: Consolidate Docker cache
         run: |
           rm -rf /tmp/.buildx-cache
           mkdir -p /tmp/.buildx-cache
-          cp -r /tmp/.buildx-cache-new-client/* /tmp/.buildx-cache || true
-          cp -r /tmp/.buildx-cache-new-server/* /tmp/.buildx-cache || true
+          cp -r /tmp/.buildx-cache-client/. /tmp/.buildx-cache || true
+          cp -r /tmp/.buildx-cache-server/. /tmp/.buildx-cache || true
