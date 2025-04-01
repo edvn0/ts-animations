@@ -18,14 +18,25 @@ export type UpdateUserParameters = {
 	password?: string
 }
 
+const mapKeysTo = <T, V = any>(input: Record<string, V>): T[] => {
+	const mapTo = (input: string) => {
+		return input as T;
+	};
+	return Object.keys(input).map(mapTo);
+};
+
 type EmailPasswordName = 'email' | 'password' | 'name'
+
+export class CouldNotCreateUserError extends Error {
+	constructor(message: string) {
+		super(message)
+		this.name = 'CouldNotCreateUserError'
+	}
+}
 
 export class UserService {
 	public async getAllUsers(): Promise<User[]> {
 		const users = await query<User>({ text: `SELECT ${userSelect} FROM users` })
-		if (users.rows.length === 0) {
-			return []
-		}
 		return users.rows.map((user) => user.reify())
 	}
 
@@ -54,12 +65,12 @@ export class UserService {
 			name: name ?? '',
 		}
 		if (
-			Object.keys(fieldsToUpdate).every((key) => fieldsToUpdate[key as EmailPasswordName] === '')
+			mapKeysTo<EmailPasswordName>(fieldsToUpdate).every((key) => fieldsToUpdate[key] === '')
 		) {
 			throw new Error('No fields to update')
 		}
-		const setClause = Object.keys(fieldsToUpdate)
-			.filter((key) => fieldsToUpdate[key as EmailPasswordName] !== '')
+		const setClause = mapKeysTo<EmailPasswordName>(fieldsToUpdate)
+			.filter((key) => fieldsToUpdate[key] !== '')
 			.map((key, index) => `${key} = $${index + 1}`)
 			.join(', ')
 		const values = Object.values(fieldsToUpdate).filter((value) => value !== '')

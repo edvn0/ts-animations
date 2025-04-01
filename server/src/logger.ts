@@ -1,16 +1,16 @@
 import pino, { LoggerOptions } from 'pino'
 
-const is_production = process.env['NODE_ENV'] === 'production'
+const isProduction = process.env['NODE_ENV'] === 'production'
 
-let logger_options: LoggerOptions = {
-  level: is_production ? 'info' : 'debug',
+let loggerOptions: LoggerOptions = {
+  level: isProduction ? 'info' : 'debug',
 }
 
 // Only add transport in dev
-if (!is_production) {
+if (!isProduction) {
   try {
-    logger_options = {
-      ...logger_options,
+    loggerOptions = {
+      ...loggerOptions,
       transport: {
         target: 'pino-pretty',
         options: {
@@ -25,7 +25,7 @@ if (!is_production) {
 	}
 }
 
-const logger = pino(logger_options)
+const logger = pino(loggerOptions)
 
 export function logError<T>(message: string, error?: T) {
 	if (error instanceof Error) {
