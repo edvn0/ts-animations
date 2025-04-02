@@ -1,5 +1,5 @@
 export type BaseModel = {
-	id: number
-	createdAt: Date
-	updatedAt: Date
+  id: number;
+  createdAt: Date;
+  updatedAt: Date;
 };

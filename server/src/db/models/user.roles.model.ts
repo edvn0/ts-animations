@@ -1,72 +1,72 @@
-import { query } from '../queries'
-import { BaseModel } from './base.model'
+import { query } from "../queries";
+import { BaseModel } from "./base.model";
 
 export type Role = BaseModel & {
-	name: string
+  name: string;
 };
 
 export type UserRole = BaseModel & {
-	userId: number
-	roleId: number
+  userId: number;
+  roleId: number;
 };
 
 export const UserRoleName = {
-	user: 'user',
-	admin: 'admin',
-	moderator: 'moderator',
-	editor: 'editor',
-	viewer: 'viewer',
-} as const
+  user: "user",
+  admin: "admin",
+  moderator: "moderator",
+  editor: "editor",
+  viewer: "viewer",
+} as const;
 
-export type UserRoleName = (typeof UserRoleName)[keyof typeof UserRoleName]
+export type UserRoleName = (typeof UserRoleName)[keyof typeof UserRoleName];
 
-export const roleNames: UserRoleName[] = Object.values(UserRoleName)
+export const roleNames: UserRoleName[] = Object.values(UserRoleName);
 
 export function roleToDatabaseValue(role: UserRoleName): string {
-	return role
+  return role;
 }
 
 export async function createUserRolesTables(): Promise<void> {
-	const roleQ = `
+  const roleQ = `
 		CREATE TABLE IF NOT EXISTS roles (
 			id SERIAL PRIMARY KEY,
 			name VARCHAR(100) UNIQUE NOT NULL,
 			created_at TIMESTAMPTZ DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
 			updated_at TIMESTAMPTZ DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL
 		);
-	`
-	await query<void>({ text: roleQ })
+	`;
+  await query<void>({ text: roleQ });
 
-	const userRoleQ = `
+  const userRoleQ = `
 		CREATE TABLE IF NOT EXISTS user_roles (
 			id SERIAL PRIMARY KEY,
 			user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 			role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
 			created_at TIMESTAMPTZ DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL
 		);
-	`
-	await query<void>({ text: userRoleQ })
+	`;
+  await query<void>({ text: userRoleQ });
 
-	const indexQ = `
+  const indexQ = `
 		CREATE UNIQUE INDEX IF NOT EXISTS user_roles_unique_idx
 		ON user_roles (user_id, role_id);
-	`
-	await query<void>({ text: indexQ })
+	`;
+  await query<void>({ text: indexQ });
 
-	const placeholders = roleNames.map((_, i) => `($${i + 1})`).join(',')
-	const defaultRolesQ = `
+  const placeholders = roleNames.map((_, i) => `($${i + 1})`).join(",");
+  const defaultRolesQ = `
 		INSERT INTO roles (name)
 		VALUES ${placeholders}
 		ON CONFLICT (name) DO NOTHING;
-	`
-	await query<void>(
-		{
-			text: defaultRolesQ,
-		},
-		roleNames.map(roleToDatabaseValue)
-	)
+	`;
+  await query<void>(
+    {
+      text: defaultRolesQ,
+    },
+    roleNames.map(roleToDatabaseValue),
+  );
 
-	const assignRandomRolesQ = `
+  const assignRandomRolesQ = `
 	INSERT INTO user_roles (user_id, role_id)
 	SELECT u.id, r.id
 	FROM users u
@@ -76,25 +76,25 @@ export async function createUserRolesTables(): Promise<void> {
 	)
 	ORDER BY RANDOM()
 	LIMIT $2;
-`
+`;
 
-	for (const role of roleNames) {
-		const numAssignments = Math.floor(Math.random() * 5000) + 500
-		await query<void>(
-			{
-				text: assignRandomRolesQ,
-			},
-			[roleToDatabaseValue(role), numAssignments]
-		)
-	}
+  for (const role of roleNames) {
+    const numAssignments = Math.floor(Math.random() * 5000) + 500;
+    await query<void>(
+      {
+        text: assignRandomRolesQ,
+      },
+      [roleToDatabaseValue(role), numAssignments],
+    );
+  }
 
-	const assignAdminQ = `
+  const assignAdminQ = `
 	INSERT INTO user_roles (user_id, role_id)
 	SELECT u.id, r.id
 	FROM users u
 	JOIN roles r ON r.name = 'admin'
 	WHERE u.email = 'mytestuser@gmail.com'
 	ON CONFLICT DO NOTHING;
-`
-	await query<void>({ text: assignAdminQ })
+`;
+  await query<void>({ text: assignAdminQ });
 }

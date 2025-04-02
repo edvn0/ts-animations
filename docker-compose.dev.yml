@@ -9,7 +9,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - '5432:5432' # exposed to host
+      - "5432:5432" # exposed to host
 
   pgadmin:
     image: dpage/pgadmin4
@@ -18,10 +18,9 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
     ports:
-      - '8080:80'
+      - "8080:80"
     depends_on:
       - postgres
 
 volumes:
   postgres_data:
-

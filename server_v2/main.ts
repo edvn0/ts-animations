@@ -1,24 +1,20 @@
 import { load } from "jsr:@std/dotenv";
 await load({ export: true });
 
-import { Application, Router } from "@oak/oak";
+import { Application } from "@oak/oak";
 import { sigInt, sigTerm } from "./exit-handlers.ts";
+import { authRouter } from "./routes/auth/auth.router.ts";
 
 const handlers = [sigInt, sigTerm];
 for (const handler of handlers) {
-	handler();
+  handler();
 }
 
-const router = new Router();
-
-router.get("/", ({ response }) => {
-	response.body = "Hello world\n";
-});
-
 const app = new Application();
-app.use(router.routes());
-app.use(router.allowedMethods());
+
+app.use(authRouter.routes());
+app.use(authRouter.allowedMethods());
 
 app.listen({
-	port: 3000,
+  port: 3000,
 });
