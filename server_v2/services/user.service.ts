@@ -1,8 +1,12 @@
-import { userSelect } from "../db/models/user.model";
-import { query } from "../db/queries";
-import { logInfo } from "../logger";
-import passwordService from "./password.service";
-import { sign } from "jsonwebtoken";
+// Import dependencies using Deno URL imports
+import { query } from "../database.ts";
+import { logInfo } from "../logger.ts";
+import {
+  create as sign,
+  Header,
+  Payload,
+} from "https://deno.land/x/djwt@v3.0.1/mod.ts";
+import passwordService from "./password.service.ts";
 
 export type User = {
   id: number;
@@ -19,6 +23,15 @@ export type UpdateUserParameters = {
   password?: string;
 };
 
+export const userSelect = `
+	id,
+	name,
+	email,
+	password,
+	created_at AS "createdAt",
+	updated_at AS "updatedAt"
+`;
+
 const mapKeysTo = <T, V = any>(input: Record<string, V>): T[] => {
   const mapTo = (input: string) => {
     return input as T;
@@ -29,7 +42,7 @@ const mapKeysTo = <T, V = any>(input: Record<string, V>): T[] => {
 type EmailPasswordName = "email" | "password" | "name";
 
 export class CouldNotCreateUserError extends Error {
-  constructor(message: string, status: string | undefined) {
+  constructor(message: string, status?: string | undefined) {
     super(!status ? message : `${message} - ${status}`);
     this.name = "CouldNotCreateUserError";
   }
@@ -40,7 +53,13 @@ export class UserService {
     const users = await query<User>({
       text: `SELECT ${userSelect} FROM users`,
     });
-    return users.rows.map((user) => user.reify());
+    if (!users) return [];
+
+    if (Array.isArray(users)) {
+      return users;
+    } else {
+      return [users];
+    }
   }
 
   public async createUser(
@@ -49,19 +68,20 @@ export class UserService {
     userPassword: string,
   ): Promise<User | null> {
     const q = `
-			INSERT INTO users (name, email, password, created_at, updated_at)
-			VALUES ($1, $2, $3, CURRENT_TIMESTAMP AT TIME ZONE 'UTC', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
-			RETURNING ${userSelect};
-		`;
-    const password = await passwordService.hashPassword(userPassword);
+      INSERT INTO users (name, email, password, created_at, updated_at)
+      VALUES ($1, $2, $3, CURRENT_TIMESTAMP AT TIME ZONE 'UTC', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+      RETURNING ${userSelect};
+    `;
+    const password = await passwordService.hashPassword({
+      password: userPassword,
+    });
     const result = await query<User>({ text: q }, [name, email, password]);
-    if (result.rows.length === 0) {
+    if (result?.length === 0) {
       throw new CouldNotCreateUserError(
         "User creation failed - no rows returned",
-        result.status!,
       );
     }
-    return result.rows[0]?.reify() ?? null;
+    return result?.at(0) ?? null;
   }
 
   public async updateUser(
@@ -75,8 +95,8 @@ export class UserService {
       name: name ?? "",
     };
     if (
-      mapKeysTo<EmailPasswordName>(fieldsToUpdate).every((key) =>
-        fieldsToUpdate[key] === ""
+      mapKeysTo<EmailPasswordName>(fieldsToUpdate).every(
+        (key) => fieldsToUpdate[key] === "",
       )
     ) {
       throw new Error("No fields to update");
@@ -85,58 +105,61 @@ export class UserService {
       .filter((key) => fieldsToUpdate[key] !== "")
       .map((key, index) => `${key} = $${index + 1}`)
       .join(", ");
-    const values = Object.values(fieldsToUpdate).filter((value) =>
-      value !== ""
+    const values = Object.values(fieldsToUpdate).filter(
+      (value) => value !== "",
     );
     const q = `
-			UPDATE users
-			SET ${setClause}, updated_at = CURRENT_TIMESTAMP
-			WHERE id = $${values.length + 1}
-			RETURNING ${userSelect};
-		`;
-    const result = await query<User>({ text: q }, [...values, id]);
-    if (result.rows.length === 0) {
+      UPDATE users
+      SET ${setClause}, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $${values.length + 1}
+      RETURNING ${userSelect};
+    `;
+    const result = await query<User>(
+      { text: q },
+      [...values, id],
+    );
+    if (result?.length === 0) {
       return null;
     }
-    return result.rows[0]?.reify() ?? null;
+    return result?.at(0) ?? null;
   }
 
   public async getUserById(id: number): Promise<User | null> {
     const q = `
-			SELECT ${userSelect}
-			FROM users
-			WHERE id = $1;
-		`;
+      SELECT ${userSelect}
+      FROM users
+      WHERE id = $1;
+    `;
     const result = await query<User>({ text: q }, [id]);
-    if (result.rows.length === 0) {
+    if (result?.length === 0) {
       return null;
     }
-    return result.rows[0]?.reify() ?? null;
+    return result?.at(0) ?? null;
   }
 
   public async deleteUser(id: number): Promise<void> {
     const q = `
-			DELETE FROM users
-			WHERE id = $1;
-		`;
+      DELETE FROM users
+      WHERE id = $1;
+    `;
     await query<void>({ text: q }, [id]);
   }
 
   public async getUserByEmail(email: string): Promise<User | null> {
     const q = `
-			SELECT ${userSelect}
-			FROM users
-			WHERE email = $1;
-		`;
+      SELECT ${userSelect}
+      FROM users
+      WHERE email = $1;
+    `;
     const result = await query<User>({ text: q }, [email]);
-    if (result.rows.length === 0) {
+    if (result?.length === 0) {
       return null;
     }
-    return result.rows[0]?.reify() ?? null;
+    return result?.at(0) ?? null;
   }
 
   public async logout(): Promise<void> {
-    return Promise.resolve();
+    return await Promise.resolve();
   }
 
   public async login(email: string, password: string): Promise<string | null> {
@@ -146,41 +169,58 @@ export class UserService {
       return null;
     }
     const isPasswordValid = await passwordService.comparePassword(
-      password,
-      user.password,
+      {
+        password,
+        hashedPassword: user.password,
+      },
     );
     if (!isPasswordValid) {
       return null;
     }
 
-    const JWT_SECRET = process.env["STATIC_JWT"] ?? "dev-secret";
+    const JWT_SECRET = Deno.env.get("STATIC_JWT") ?? "dev-secret";
 
     const roles = await query<{ name: string }>(
       {
         text: `
-				SELECT r.name
-				FROM user_roles ur
-				JOIN roles r ON ur.role_id = r.id
-				WHERE ur.user_id = $1
-			`,
+        SELECT r.name
+        FROM user_roles ur
+        JOIN roles r ON ur.role_id = r.id
+        WHERE ur.user_id = $1
+      `,
       },
       [user.id],
     );
 
-    const token = sign(
-      {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        roles: roles.rows.map((role) => role.reify().name) ?? [],
-      },
-      JWT_SECRET,
-      {
-        expiresIn: "1m",
-        algorithm: "HS256",
-        issuer: "ts-animations-server",
-        audience: "ts-animations-client",
-      },
+    // Using djwt instead of jsonwebtoken
+    const payload: Payload = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      roles: roles?.map((e) => e.name) ?? [],
+    };
+
+    const header: Header = {
+      alg: "HS256",
+      typ: "JWT",
+    };
+
+    // Convert JWT_SECRET to Uint8Array for djwt
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(JWT_SECRET);
+
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign", "verify"],
+    );
+
+    const token = await sign(
+      header,
+      payload,
+      cryptoKey,
     );
 
     return token;

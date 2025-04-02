@@ -1,11 +1,14 @@
-import { randomBytes, timingSafeEqual } from "crypto";
-import { scryptAsync } from "../functions/promisified";
+import { randomBytes, timingSafeEqual } from "node:crypto";
+import { Buffer } from "node:buffer";
+import { scryptAsync } from "../functions/promisified.ts";
 
 class PasswordService {
   private static readonly saltCount = 16;
   private static readonly keyLength = 64;
 
-  public async hashPassword(password: string): Promise<string> {
+  public async hashPassword(
+    { password }: { password: string },
+  ): Promise<string> {
     const salt = randomBytes(PasswordService.saltCount).toString("hex");
     const hash =
       (await scryptAsync(password, salt, PasswordService.keyLength)) as Buffer;
@@ -13,8 +16,7 @@ class PasswordService {
   }
 
   public async comparePassword(
-    password: string,
-    hashedPassword: string,
+    { password, hashedPassword }: { password: string; hashedPassword: string },
   ): Promise<boolean> {
     const [salt, key] = hashedPassword.split(":");
     if (!salt || !key) {

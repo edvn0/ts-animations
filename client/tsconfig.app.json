@@ -15,9 +15,9 @@
       "@composables/*": ["./src/composables/*"],
       "@services/*": ["./src/services/*"],
       "@pages/*": ["./src/pages/*"],
-      "@router/*": ["./src/router/*"],
+      "@router/*": ["./src/router/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"],
-  "exclude": ["node_modules", "dist"],
+  "exclude": ["node_modules", "dist"]
 }
