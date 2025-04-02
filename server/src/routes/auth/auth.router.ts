@@ -5,7 +5,7 @@ import { body, validationResult } from 'express-validator'
 const authRouter = Router()
 
 authRouter.post(
-	'/',
+	'/login',
 	body('email').notEmpty().withMessage('Email is required'),
 	body('password').notEmpty().isString(),
 	async (req, res) => {
@@ -29,5 +29,10 @@ authRouter.post(
 		res.json({ token })
 	}
 )
+
+authRouter.post('/logout', async (_req, res) => {
+	await userService.logout()
+	res.status(204).send()
+})
 
 export default authRouter

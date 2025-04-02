@@ -2,7 +2,7 @@ import 'dotenv/config'
 import express from 'express'
 import { apiRouter } from './routes/api/api.router'
 import { connectDatabase, destroy } from './db/connect-database'
-import authRouter from './routes/api/auth.router'
+import authRouter from './routes/auth/auth.router'
 import { authenticateToken } from './middleware/auth.middleware'
 import { logError, logInfo } from './logger'
 
@@ -21,7 +21,7 @@ if (!JWT) {
 	logInfo(`JWT is defined as ${JWT}`)
 }
 
-app.use('/api/login', authRouter)
+app.use('/api', authRouter)
 app.use('/api', authenticateToken, apiRouter)
 
 process.on('beforeExit', async () => {

@@ -11,7 +11,7 @@ env:
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       VITE_BACKEND_URL: ${{ secrets.VITE_BACKEND_URL }}
       SERVER_PORT: ${{ secrets.SERVER_PORT }}

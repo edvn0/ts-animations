@@ -16,8 +16,8 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
 		return
 	}
 	try {
-		const payload = jwt.verify(token, JWT_SECRET)
-		;(req as any).user = payload
+		const payload = jwt.verify(token, JWT_SECRET);
+		(req as any).user = payload
 		next()
 	} catch {
 		res.sendStatus(403)

@@ -1,12 +1,11 @@
 import pino, { LoggerOptions } from 'pino'
 
-const isProduction = process.env['NODE_ENV'] === 'production'
+const isProduction = process.env['NODE_ENV'] === 'production';
 
 let loggerOptions: LoggerOptions = {
   level: isProduction ? 'info' : 'debug',
 }
 
-// Only add transport in dev
 if (!isProduction) {
   try {
     loggerOptions = {

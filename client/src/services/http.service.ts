@@ -25,10 +25,12 @@ class HttpError extends Error {
 
 class HttpService {
 	private readonly axiosInstance: AxiosInstance
+	private readonly maxRetries = 3
+	private readonly baseDelayMillis = 300
 
-	constructor(baseUrl: string) {
+	constructor(base_url: string) {
 		this.axiosInstance = axios.create({
-			baseURL: `${baseUrl}/api`,
+			baseURL: `${base_url}/api`,
 			timeout: 10000,
 			headers: { 'Content-Type': 'application/json' },
 		})
@@ -36,55 +38,64 @@ class HttpService {
 		this.axiosInstance.interceptors.request.use((config) => {
 			const token = tokenService.get()
 			if (!token) return config
-
 			config.headers['Authorization'] = `Bearer ${token}`
 			return config
 		})
 	}
 
 	public async get<T>(url: string, params?: Record<string, any>): Promise<T> {
-		try {
-			const response: AxiosResponse<T> = await this.axiosInstance.get<T>(url, { params })
-			return response.data
-		} catch (error) {
-			throw this.normalizeError(error)
-		}
+		return this.requestWithRetry<T>(() => this.axiosInstance.get<T>(url, { params }))
 	}
 
 	public async post<T>(url: string, data?: Record<string, any>): Promise<T> {
-		try {
-			const response: AxiosResponse<T> = await this.axiosInstance.post<T>(url, data)
-			return response.data
-		} catch (error) {
-			throw this.normalizeError(error)
-		}
+		return this.requestWithRetry<T>(() => this.axiosInstance.post<T>(url, data))
 	}
 
 	public async put<T>(url: string, data?: Record<string, any>): Promise<T> {
-		try {
-			const response: AxiosResponse<T> = await this.axiosInstance.put<T>(url, data)
-			return response.data
-		} catch (error) {
-			throw this.normalizeError(error)
-		}
+		return this.requestWithRetry<T>(() => this.axiosInstance.put<T>(url, data))
 	}
 
 	public async delete<T>(url: string): Promise<T> {
-		try {
-			const response: AxiosResponse<T> = await this.axiosInstance.delete<T>(url)
-			return response.data
-		} catch (error) {
-			throw this.normalizeError(error)
+		return this.requestWithRetry<T>(() => this.axiosInstance.delete<T>(url))
+	}
+
+	private async requestWithRetry<T>(fn: () => Promise<AxiosResponse<T>>): Promise<T> {
+		let attempt = 0
+		while (true) {
+			try {
+				const response = await fn()
+				return response.data
+			} catch (error) {
+				const axiosError = error as AxiosError
+				const shouldRetry = this.shouldRetry(axiosError)
+				if (!shouldRetry || attempt >= this.maxRetries) {
+					throw this.normalizeError(error)
+				}
+				const delay = this.baseDelayMillis * (2 ** attempt)
+				await this.sleep(delay)
+				attempt++
+			}
 		}
+	}
+
+	private shouldRetry(error: AxiosError): boolean {
+		if (!error.response) return true
+		const status = error.response.status
+		if (status >= 500 || status === 429) return true
+		return false
+	}
+
+	private sleep(ms: number): Promise<void> {
+		return new Promise((resolve) => setTimeout(resolve, ms))
 	}
 
 	private normalizeError(error: unknown): HttpError {
 		if (axios.isAxiosError(error)) {
-			const axiosErr = error as AxiosError
-			const statusCode = axiosErr.response?.status
-			const responseData = axiosErr.response?.data
-			const message = axiosErr.message ?? 'Unexpected HTTP error'
-			return new HttpError(message, statusCode, responseData, error)
+			const axiosError = error as AxiosError
+			const status_code = axiosError.response?.status
+			const response_data = axiosError.response?.data
+			const message = axiosError.message ?? 'Unexpected HTTP error'
+			return new HttpError(message, status_code, response_data, error)
 		}
 		return new HttpError('Unknown error occurred', undefined, undefined, error)
 	}

@@ -1,8 +1,5 @@
 FROM node:20-alpine AS builder
 
-ARG VITE_BACKEND_URL=/api
-ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
-
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app

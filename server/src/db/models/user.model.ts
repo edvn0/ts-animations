@@ -2,15 +2,13 @@ import { faker } from '@faker-js/faker'
 import { query } from '../queries'
 import passwordService from '../../services/password.service'
 import { logInfo } from '../../logger'
+import { BaseModel } from './base.model'
 
-export interface User {
-	id: number
-	name: string
+export type User= BaseModel & {
 	email: string
 	password: string
-	createdAt: Date
-	updatedAt: Date
-}
+	name: string
+};
 
 export const userSelect = `
 	id,

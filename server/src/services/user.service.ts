@@ -1,5 +1,6 @@
 import { userSelect } from '../db/models/user.model'
 import { query } from '../db/queries'
+import { logInfo } from '../logger'
 import passwordService from './password.service'
 import { sign } from 'jsonwebtoken'
 
@@ -28,8 +29,8 @@ const mapKeysTo = <T, V = any>(input: Record<string, V>): T[] => {
 type EmailPasswordName = 'email' | 'password' | 'name'
 
 export class CouldNotCreateUserError extends Error {
-	constructor(message: string) {
-		super(message)
+	constructor(message: string, status: string | undefined) {
+		super(!status ? message : `${message} - ${status}`);
 		this.name = 'CouldNotCreateUserError'
 	}
 }
@@ -49,7 +50,7 @@ export class UserService {
 		const password = await passwordService.hashPassword(userPassword)
 		const result = await query<User>({ text: q }, [name, email, password])
 		if (result.rows.length === 0) {
-			throw new Error('User creation failed')
+			throw new CouldNotCreateUserError("User creation failed - no rows returned", result.status!);
 		}
 		return result.rows[0]?.reify() ?? null
 	}
@@ -121,9 +122,14 @@ export class UserService {
 		return result.rows[0]?.reify() ?? null
 	}
 
+	public async logout(): Promise<void> {
+		return Promise.resolve();
+	}
+
 	public async login(email: string, password: string): Promise<string | null> {
 		const user = await this.getUserByEmail(email)
 		if (!user) {
+			logInfo	('User not found')
 			return null
 		}
 		const isPasswordValid = await passwordService.comparePassword(password, user.password)

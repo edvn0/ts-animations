@@ -15,11 +15,26 @@ class UserService {
 		return this.httpService.get<User[]>(`/v${this.version}/users`)
 	}
 
+	public async getUserInformation(): Promise<User> {
+		const response = await this.httpService.get<User>(`/v${this.version}/users/me`);
+		if (!response) throw new Error('User not found')
+		return response;
+	}
+
+	public async getRoles(): Promise<string[]> {
+		return this.httpService.get<string[]>(`/v${this.version}/roles`)
+	}
+
 	public async login(email: string, password: string): Promise<string> {
 		const response = await this.httpService.post<{ token: string }>('/login', { email, password })
 		if (!response.token) throw new Error('Invalid login')
 		this.tokenService.set(response.token)
 		return response.token
+	}
+
+	public async logout(): Promise<void> {
+		await this.httpService.post('/logout')
+		this.tokenService.clear()
 	}
 }
 

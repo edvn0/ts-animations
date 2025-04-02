@@ -1,18 +1,14 @@
 import { query } from '../queries'
+import { BaseModel } from './base.model'
 
-export interface Role {
-	id: number
+export type Role = BaseModel & {
 	name: string
-	createdAt: Date
-	updatedAt: Date
-}
+};
 
-export interface UserRole {
-	id: number
+export type UserRole = BaseModel & {
 	userId: number
 	roleId: number
-	createdAt: Date
-}
+};
 
 export const UserRoleName = {
 	user: 'user',

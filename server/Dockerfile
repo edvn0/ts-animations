@@ -8,6 +8,7 @@ COPY package.json ./
 RUN pnpm install
 
 COPY tsconfig*.json ./
+COPY tsconfig.json ./
 COPY src ./src
 
 RUN pnpm build
@@ -20,6 +21,7 @@ WORKDIR /app
 
 COPY --from=base /app/dist ./dist
 COPY package.json  ./
-RUN pnpm install --prod
+RUN pnpm install --prod && \
+    echo "Runtime contents after copy and install:" && find /app
 
 CMD ["node", "dist/index.js"]

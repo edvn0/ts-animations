@@ -1,6 +1,5 @@
 # Editorconfig 2 tabs
-
-[*.{ts,js}]
+[*.{ts,js,vue}]
 indent_style = tab
 indent_size = 2
 end_of_line = lf
