@@ -1,4 +1,4 @@
-import { closePool } from "./database.ts";
+import { closePool } from "./database/database.ts";
 
 const sigInt = () =>
   Deno.addSignalListener("SIGINT", async () => {
