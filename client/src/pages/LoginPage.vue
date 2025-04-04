@@ -12,17 +12,18 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import userService from '../services/user.service'
 import { useGlobalToast } from '../composables/toast';
+import { useUserStore } from '../store/user.store';
 
 const email = ref('')
 const password = ref('')
 const router = useRouter()
 const { success, error } = useGlobalToast()
+const { login } = useUserStore();
 
 const handleLogin = async () => {
 	try {
-		await userService.login(email.value, password.value)
+		await login(email.value, password.value)
 		success('Login successful')
 		router.push({ name: 'home' })
 	} catch (e) {

@@ -1,33 +1,24 @@
 <template>
-	<header class="app-header" v-if="user">
-		<span>Welcome, {{ user.name }}</span>
+	<header class="app-header" v-if="userStore.user">
+		<span>Welcome, {{ userStore.user.name }}</span>
 		<button @click="handleLogout">Logout</button>
 	</header>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import userService from '../services/user.service'
 import { useGlobalToast } from '../composables/toast'
+import { useUserStore } from '../store/user.store'
 
-const user = ref<{ name: string; email: string } | null>(null)
+const userStore = useUserStore()
 const router = useRouter()
 const { success, error } = useGlobalToast()
 
-onMounted(async () => {
-	try {
-		user.value = await userService.getUserInformation()
-	} catch {
-		user.value = null
-	}
-})
-
 const handleLogout = async () => {
 	try {
-		await userService.logout()
+		await userStore.logout()
 		success('Logged out')
-		router.push({ name: 'login' })
+		await router.push({ name: 'login' })
 	} catch {
 		error('Logout failed')
 	}
@@ -48,6 +39,7 @@ const handleLogout = async () => {
 	top: 0;
 	z-index: 1000;
 }
+
 button {
 	padding: 0.5rem;
 }

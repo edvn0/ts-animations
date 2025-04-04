@@ -8,18 +8,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import userService from '../services/user.service'
-import type { User } from '../models/user.type'
-import { type ViewModel } from '../models/view.model.type'
+import { useUserStore } from '../store/user.store'
 
-const user = ref<ViewModel<User>>(null)
-
-onMounted(async () => {
-	try {
-		user.value = await userService.getUserInformation()
-	} catch {
-		user.value = null
-	}
-})
+const { user } = useUserStore();
 </script>
