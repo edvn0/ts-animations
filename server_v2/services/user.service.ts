@@ -1,5 +1,4 @@
 // Import dependencies using Deno URL imports
-import { query } from "../database.ts";
 import { logInfo } from "../logger.ts";
 import {
   create as sign,
@@ -7,6 +6,7 @@ import {
   Payload,
 } from "https://deno.land/x/djwt@v3.0.1/mod.ts";
 import passwordService from "./password.service.ts";
+import { query } from "../database/database.ts";
 
 export type User = {
   id: number;
@@ -50,7 +50,7 @@ export class CouldNotCreateUserError extends Error {
 
 export class UserService {
   public async getAllUsers(): Promise<User[]> {
-    const users = await query<User>({
+    const users = await query<User[]>({
       text: `SELECT ${userSelect} FROM users`,
     });
     if (!users) return [];
@@ -86,9 +86,8 @@ export class UserService {
 
   public async updateUser(
     id: number,
-    updatableParameters: UpdateUserParameters,
+    { name, email, password }: UpdateUserParameters,
   ): Promise<User | null> {
-    const { name, email, password } = updatableParameters;
     const fieldsToUpdate: Record<EmailPasswordName, string> = {
       email: email ?? "",
       password: password ?? "",
@@ -192,7 +191,6 @@ export class UserService {
       [user.id],
     );
 
-    // Using djwt instead of jsonwebtoken
     const payload: Payload = {
       id: user.id,
       email: user.email,

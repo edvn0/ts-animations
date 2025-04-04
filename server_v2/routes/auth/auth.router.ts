@@ -1,5 +1,6 @@
 import { Context, Router } from "@oak/oak";
 import userService from "../../services/user.service.ts";
+import { logError } from "../../logger.ts";
 
 const authRouter = new Router();
 
@@ -15,6 +16,8 @@ const validateLogin = async (ctx: Context, next: () => Promise<unknown>) => {
       return;
     }
   } catch (_error) {
+    logError("Could not parse body.", _error);
+
     ctx.response.status = 400;
     ctx.response.body = { errors: [{ msg: "Invalid request body" }] };
     return;

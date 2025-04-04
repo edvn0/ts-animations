@@ -1,5 +1,4 @@
-import { load } from "jsr:@std/dotenv";
-await load({ export: true });
+import "@std/dotenv/load";
 
 import { Application } from "@oak/oak";
 import { sigInt, sigTerm } from "./exit-handlers.ts";
