@@ -1,6 +1,6 @@
 <template>
 	<div class="app-layout">
-		<AppHeader v-if="showHeader" />
+		<AppHeader v-if="isLoggedIn" />
 		<main class="app-main">
 			<slot />
 		</main>
@@ -11,11 +11,10 @@
 <script setup lang="ts">
 import AppHeader from './AppHeader.vue'
 import AppFooter from './AppFooter.vue'
-import { useRoute } from 'vue-router'
-import { computed } from 'vue'
+import { useUserStore } from '../store/user.store';
 
-const route = useRoute()
-const showHeader = computed(() => route.name !== 'login')
+
+const { isLoggedIn } = useUserStore()
 </script>
 
 <style scoped>
