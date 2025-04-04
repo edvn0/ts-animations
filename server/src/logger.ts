@@ -5,25 +5,6 @@ const isProduction = process.env["NODE_ENV"] === "production";
 let loggerOptions: LoggerOptions = {
   level: isProduction ? "info" : "debug",
 };
-
-if (!isProduction) {
-  try {
-    loggerOptions = {
-      ...loggerOptions,
-      transport: {
-        target: "pino-pretty",
-        options: {
-          colorize: true,
-          translateTime: "HH:MM:ss",
-          ignore: "pid,hostname",
-        },
-      },
-    };
-  } catch (e) {
-    // Fallback
-  }
-}
-
 const logger = pino(loggerOptions);
 
 export function logError<T>(message: string, error?: T) {
