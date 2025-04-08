@@ -1,27 +1,13 @@
-FROM node:20-alpine AS base
-
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
+FROM denoland/deno:latest AS builder
 WORKDIR /app
+COPY . .
+RUN deno install --entrypoint main.ts --lock
 
-COPY package.json ./
-RUN pnpm install
-
-COPY tsconfig*.json ./
-COPY tsconfig.json ./
-COPY src ./src
-
-RUN pnpm build
-
-FROM node:20-alpine AS runtime
-
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
+FROM denoland/deno:latest
 WORKDIR /app
+COPY --from=builder /app .
 
-COPY --from=base /app/dist ./dist
-COPY package.json  ./
-RUN pnpm install --prod && \
-    echo "Runtime contents after copy and install:" && find /app
+COPY scripts/wait-for-it.sh /usr/local/bin/wait-for-it.sh
+RUN chmod +x /usr/local/bin/wait-for-it.sh
 
-CMD ["node", "dist/index.js"]
+CMD ["deno", "run", "-ERN", "main.ts"]

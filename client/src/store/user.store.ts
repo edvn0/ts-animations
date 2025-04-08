@@ -1,12 +1,11 @@
-import type { User } from "@models/user.type";
-import tokenService, { validateToken } from "@services/token.service";
-import userService from "@services/user.service";
+import type { User } from "../models/user.type";
+import tokenService, { validateToken } from "../services/token.service";
+import userService from "../services/user.service";
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
 export const useUserStore = defineStore("user", () => {
   const user = ref<User | null>(null);
-
   const isLoggedIn = computed(() => !!user.value);
   const token = computed(() => tokenService.get());
 

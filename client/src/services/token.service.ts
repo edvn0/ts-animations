@@ -8,11 +8,11 @@ export interface ITokenService {
 
 const decodeImpl = (token: string): JwtPayload | null => {
   try {
-    const payload = jwtDecode(token, {});
+    const payload = jwtDecode(token, { header: false });
     if (typeof payload === "object" && payload !== null) {
       return payload;
     }
-  } catch (error) {
+  } catch (_error) {
     throw new Error("Invalid token");
   }
   return null;
@@ -23,6 +23,7 @@ export const validateToken = (token: string) => {
     return false;
   }
   const payload = decodeImpl(token);
+  console.log(payload);
   if (!payload?.exp) {
     return false;
   }

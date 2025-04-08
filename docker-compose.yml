@@ -16,13 +16,17 @@ services:
       context: ./server
     expose:
       - "4000"
+    volumes:
+      - ./server/scripts/wait-for-it.sh:/usr/local/bin/wait-for-it.sh
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       STATIC_JWT: ${STATIC_JWT}
-      POSTGRES_HOST: postgres
-      NODE_ENV: ${NODE_ENV}
+    command: sh -c "/usr/local/bin/wait-for-it.sh postgres:5432 -t 10 -- deno run -ERN main.ts"
 
   postgres:
     image: postgres:latest
@@ -33,10 +37,17 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
     networks:
       - app-network
     ports:
       - "5432"
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   pgadmin:
     image: dpage/pgadmin4

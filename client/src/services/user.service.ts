@@ -12,7 +12,7 @@ class UserService {
   ) {}
 
   public async getUsers(): Promise<User[]> {
-    return this.httpService.get<User[]>(`/v${this.version}/users`);
+    return await this.httpService.get<User[]>(`/v${this.version}/users`);
   }
 
   public async getUserInformation(): Promise<User> {
@@ -24,7 +24,7 @@ class UserService {
   }
 
   public async getRoles(): Promise<string[]> {
-    return this.httpService.get<string[]>(`/v${this.version}/roles`);
+    return await this.httpService.get<string[]>(`/v${this.version}/roles`);
   }
 
   public async login(email: string, password: string): Promise<string> {
@@ -34,6 +34,7 @@ class UserService {
     });
     if (!response.token) throw new Error("Invalid login");
     this.tokenService.set(response.token);
+    console.log(this.tokenService.get());
     return response.token;
   }
 
