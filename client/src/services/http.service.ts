@@ -1,8 +1,4 @@
-import axios, {
-  AxiosError,
-  type AxiosInstance,
-  type AxiosResponse,
-} from "axios";
+import axios, { AxiosError, type AxiosInstance, type AxiosResponse } from "axios";
 import tokenService from "./token.service";
 
 const BASE_URL = "";
@@ -47,24 +43,23 @@ class HttpService {
     });
   }
 
+  // deno-lint-ignore no-explicit-any
   public async get<T>(url: string, params?: Record<string, any>): Promise<T> {
-    return this.requestWithRetry<T>(() =>
-      this.axiosInstance.get<T>(url, { params })
-    );
+    return await this.requestWithRetry<T>(() => this.axiosInstance.get<T>(url, { params }));
   }
 
+  // deno-lint-ignore no-explicit-any
   public async post<T>(url: string, data?: Record<string, any>): Promise<T> {
-    return this.requestWithRetry<T>(() =>
-      this.axiosInstance.post<T>(url, data)
-    );
+    return await this.requestWithRetry<T>(() => this.axiosInstance.post<T>(url, data));
   }
 
+  // deno-lint-ignore no-explicit-any
   public async put<T>(url: string, data?: Record<string, any>): Promise<T> {
-    return this.requestWithRetry<T>(() => this.axiosInstance.put<T>(url, data));
+    return await this.requestWithRetry<T>(() => this.axiosInstance.put<T>(url, data));
   }
 
   public async delete<T>(url: string): Promise<T> {
-    return this.requestWithRetry<T>(() => this.axiosInstance.delete<T>(url));
+    return await this.requestWithRetry<T>(() => this.axiosInstance.delete<T>(url));
   }
 
   private async requestWithRetry<T>(

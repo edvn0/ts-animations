@@ -1,0 +1,27 @@
+{
+  "tasks": {
+    "dev": "deno run -A server/main.ts",
+    "client": "deno run -A client/dev.ts",
+    "dev:client": "deno run -A client/dev.ts",
+    "dev:server": "deno run -A server/main.ts",
+    "build:client": "deno run -A scripts/build_client.ts",
+    "serve:client": "deno run -A client/dev.ts",
+    "start:dev": "deno run -A scripts/concurrently.ts",
+    "format": "deno fmt",
+    "lint": "deno lint"
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  },
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 100
+  },
+  "imports": {
+    "@vitejs/plugin-vue": "npm:@vitejs/plugin-vue@^5.2.3",
+    "vite": "npm:vite@^6.2.5",
+    "vite-tsconfig-paths": "npm:vite-tsconfig-paths@^5.1.4"
+  }
+}
