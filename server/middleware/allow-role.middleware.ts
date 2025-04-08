@@ -20,9 +20,7 @@ export function allowRole(...allowed: UserRoleName[]) {
       return;
     }
 
-    const hasRole = user.roles.some((role) =>
-      allowed.includes(role as UserRoleName)
-    );
+    const hasRole = user.roles.some((role) => allowed.includes(role as UserRoleName));
     if (!hasRole) {
       ctx.response.status = 403;
       ctx.response.body = { message: "Forbidden: Role missing" };

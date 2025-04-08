@@ -58,9 +58,7 @@ export const createUserTable: TableInitialisationFunction = async (
     const rows: unknown[][] = [];
 
     logInfo(
-      `Processing batch ${i / batch_size + 1}, users ${i + 1} to ${
-        i + current_batch_size
-      }`,
+      `Processing batch ${i / batch_size + 1}, users ${i + 1} to ${i + current_batch_size}`,
     );
 
     for (let j = 0; j < current_batch_size; j++) {

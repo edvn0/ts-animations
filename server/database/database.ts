@@ -1,8 +1,4 @@
-import {
-  ClientOptions,
-  Pool,
-  PoolClient,
-} from "https://deno.land/x/postgres@v0.19.3/mod.ts";
+import { ClientOptions, Pool, PoolClient } from "https://deno.land/x/postgres@v0.19.3/mod.ts";
 import { delay } from "https://deno.land/std@0.224.0/async/delay.ts";
 import { logError, logInfo } from "../logger.ts";
 
@@ -32,7 +28,7 @@ export class DatabaseService implements IDatabaseService {
 
   constructor() {
     const config: ClientOptions = {
-      hostname: "postgres",
+      hostname: Deno.env.get("POSTGRES_HOST") ?? "postgres",
       port: Number(Deno.env.get("POSTGRES_PORT") ?? 5432),
       user: Deno.env.get("POSTGRES_USER") ?? "postgres",
       password: Deno.env.get("POSTGRES_PASSWORD") ?? "postgres",
@@ -98,9 +94,7 @@ export class DatabaseService implements IDatabaseService {
       values.push(...row);
     });
 
-    let text = `INSERT INTO ${table} (${columns.join(", ")}) VALUES ${
-      placeholders.join(", ")
-    }`;
+    let text = `INSERT INTO ${table} (${columns.join(", ")}) VALUES ${placeholders.join(", ")}`;
     if (on_conflict) text += ` ON CONFLICT ${on_conflict}`;
 
     const client = await this.getClient();

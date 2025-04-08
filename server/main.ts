@@ -2,13 +2,17 @@ import { Application } from "@oak/oak/application";
 import { CorsOptions, oakCors } from "jsr:@tajpouria/cors";
 import { load } from "jsr:@std/dotenv";
 
+const __dirname = new URL(".", import.meta.url).pathname;
 const env: string = Deno.env.get("ENV") || "development";
-const envPath: string = `environments/.env.${env}`.toString();
+const envPath: string = Deno.realPathSync(`${__dirname}/environments/.env.${env}`);
 
 await load({
   envPath,
   export: true,
 });
+
+logInfo(`Environment: ${env}`);
+
 const db = await initialiseDatabase([createUserTable, createUserRolesTables]);
 export const userService = new UserService(db);
 
@@ -36,13 +40,11 @@ app.use(authRouter.allowedMethods());
 app.use(apiRouter.prefix("/api").routes());
 app.use(apiRouter.allowedMethods());
 
-import { sigInt, sigTerm } from "./exit-handlers.ts";
 import { UserService } from "./services/user.service.ts";
+import { handleSignals } from "./exit-handlers.ts";
+import { logInfo } from "./logger.ts";
 
-const handlers = [sigInt, sigTerm];
-for (const handler of handlers) {
-  handler(db);
-}
+handleSignals(db);
 
 app.listen({
   port: 4000,

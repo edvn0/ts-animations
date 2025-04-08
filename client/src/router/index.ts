@@ -4,9 +4,9 @@ import {
   type NavigationGuardNext,
   type RouteLocationNormalized,
 } from "vue-router";
-import LoginPage from "@pages/LoginPage.vue";
-import HomePage from "@pages/HomePage.vue";
-import tokenService, { validateToken } from "@services/token.service";
+import LoginPage from "../pages/LoginPage.vue";
+import HomePage from "../pages/HomePage.vue";
+import tokenService, { validateToken } from "../services/token.service";
 
 const jwtGuard = (
   _req: RouteLocationNormalized,

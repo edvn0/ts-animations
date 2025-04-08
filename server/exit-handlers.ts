@@ -1,14 +1,11 @@
 import { closePool, IDatabaseService } from "./database/database.ts";
 
-const sigInt = (db: IDatabaseService) =>
-  Deno.addSignalListener("SIGINT", async () => {
-    await closePool(db);
-    Deno.exit(0);
-  });
-const sigTerm = (db: IDatabaseService) =>
-  Deno.addSignalListener("SIGTERM", async () => {
-    await closePool(db);
-    Deno.exit(0);
-  });
-
-export { sigInt, sigTerm };
+const handlers: Deno.Signal[] = ["SIGINT", "SIGTERM"];
+export function handleSignals(database: IDatabaseService) {
+  for (const signal of handlers) {
+    Deno.addSignalListener(signal, async () => {
+      await closePool(database);
+      Deno.exit(0);
+    });
+  }
+}

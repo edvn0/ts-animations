@@ -1,9 +1,6 @@
 import { Router } from "@oak/oak/router";
 import { Context } from "@oak/oak/context";
-import {
-  CouldNotCreateUserError,
-  User,
-} from "../../../services/user.service.ts";
+import { CouldNotCreateUserError, User } from "../../../services/user.service.ts";
 import { userService } from "../../../main.ts";
 
 export const userRouterV1 = new Router();
